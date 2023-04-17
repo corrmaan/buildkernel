@@ -31,7 +31,7 @@ shopt -s nullglob
 # ********************** variables ********************* 
 PROGNAME="$(basename "${0}")"
 CONFFILE="/etc/${PROGNAME}.conf"
-VERSION="1.0.37"
+VERSION="1.0.38"
 ETCPROFILE="/etc/profile"
 DEFAULTEFIBOOTFILE="bootx64.efi"
 EFIBOOTFILE="${DEFAULTEFIBOOTFILE}"
@@ -291,7 +291,7 @@ extract_kernel_release_name() {
     # sign appended)
     # LINUXBUILDDIR must be defined and non-blank on entry
     NEWVERSION="linux-$(cd "${LINUXBUILDDIR}" && make -s kernelrelease)"
-    INITRAMFSNAME="$(echo $NEWVERSION | sed "s/linux/initramfs-genkernel-x86_64/")"
+    INITRAMFSNAME="$(echo $NEWVERSION | sed "s/linux/initramfs/")"
     VMLINUZNAME="$(echo $NEWVERSION | sed "s/linux/vmlinuz/")"
 }
 check_gcc_config_and_reset_if_necessary() {
@@ -1891,15 +1891,15 @@ create_initramfs_using_genkernel() {
     if ((DISABLE_LVM==0)); then
         GENKERNEL_OPTS+="--lvm "
     fi
-    GENKERNEL_OPTS+="--no-gpg --udev ${POSTCLEAR_FLAG} "
-    GENKERNEL_OPTS+="--kernel-config=\"${TARGETCONFIG}\" --busybox "
+    GENKERNEL_OPTS+="--no-gpg ${POSTCLEAR_FLAG} "
+    GENKERNEL_OPTS+="--kerneldir=${LINUXBUILDDIR} --kernel-config=.config --busybox "
     GENKERNEL_OPTS+="--no-compress-initramfs "
     GENKERNEL_OPTS+="${ADDITIONALGENKERNELOPTS} ${PLYMOUTH_OPTS} initramfs"
     genkernel ${GENKERNEL_OPTS}
     # re-extract release details, in case these have changed
     # (e.g. due to 'SCM dirty suffix' having been added (a '+' sign))
     extract_kernel_release_name
-    cp ${VERBOSITYFLAG} "${BOOTDIR}/${INITRAMFSNAME}" "${UNCOMPRESSEDINITRAMFS}"
+    cp ${VERBOSITYFLAG} "${BOOTDIR}/${INITRAMFSNAME}.img" "${UNCOMPRESSEDINITRAMFS}"
 }
 unpack_initramfs() {
     show "Unpacking initramfs cpio archive to ${INITRAMFSDIR}..."
@@ -1944,7 +1944,7 @@ modify_initramfs() {
 }
 repack_initramfs() {
     show "Deleting old initramfs cpio archive, and repacking..."
-    rm ${VERBOSITYFLAG} -f "${UNCOMPRESSEDINITRAMFS}" "${BOOTDIR}/${INITRAMFSNAME}"
+    rm ${VERBOSITYFLAG} -f "${UNCOMPRESSEDINITRAMFS}" "${BOOTDIR}/${INITRAMFSNAME}.img"
     (cd "${INITRAMFSDIR}"; find . | cpio -H newc --create > "${UNCOMPRESSEDINITRAMFS}")
     cp ${VERBOSITYFLAG} "${UNCOMPRESSEDINITRAMFS}" "${BOOTDIR}/${INITRAMFSNAME}"
 }
